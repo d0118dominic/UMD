@@ -12,7 +12,7 @@ event3 = ['2015-12-08/11:39:14','2015-12-08/11:41:53']
 allevents = ['2015-12-08/11:27:00','2015-12-08/11:41:53']
 
 trange =event1
-probe = 1
+probe = 3
 data_rate = 'brst'
 datatype = 'dis'
 edatatype = 'des'
@@ -30,7 +30,7 @@ pyspedas.mms.fpi(probe = probe, data_rate = data_rate,
 
 from pyspedas import tinterpol
 from pytplot import get_data, store_data
-probe = 1
+
 vi_name = 'mms' + str(probe) + '_' + datatype + '_bulkv_gse_brst'
 ve_name = 'mms' + str(probe) + '_' + edatatype + '_bulkv_gse_brst'
 B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
@@ -57,7 +57,7 @@ ve = get_data(ve_newname)
 ne = get_data(ne_newname)
 
 
-#%%
+##%%
 
 # Calculate Ei' & J.E
 
@@ -147,7 +147,7 @@ def get_JE_Par(n,vi,ve,E,B):
 	return je_par
 
 
-#%%
+##%%
 
 
 Eprime = get_eprime(E, vi, B)
@@ -177,11 +177,10 @@ JdotE = 'JdotE'
 store_data('JE_par', data = {'x':vi.times, 'y': 1e9*JEpar})
 options('JE_par', 'ytitle', 'JE_par [nW/m^3]')
 JE_par = 'JE_par'
-#%%
+##%%
 
 
-plots = ['mms1_fgm_b_gse_brst_l2',JE_par,JdotE,'mms1_dis_bulkv_gse_brst',
- 'mms1_des_numberdensity_brst',  'mms1_dis_energyspectr_omni_brst',JdotE]
+plots = [B_name,E_name,vi_name,ni_name,JE_par,JdotE]
 
 options(plots, 'legend_location', 'spedas')
 options(plots, 'ylog', 0)
