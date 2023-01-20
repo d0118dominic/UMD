@@ -59,7 +59,7 @@ ve = get_data(ve_newname)
 ne = get_data(ne_newname)
 
 
-##%%
+#%%
 
 # Calculate Ei' & J.E
 
