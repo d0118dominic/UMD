@@ -88,13 +88,18 @@ def div(veclist, klist):
         i+=1
     return div
 
+##%%  
+
+#____________________________________________________
+# Something isn't working here 
 def curl(veclist, klist):
     i = 0
     curl = np.array([0,0,0])
     while i < 4:
-        curl += np.curl(klist[i],veclist[i])
+        curl += np.cross(klist[i],veclist[i])
         i+=1
     return curl
+#___________________________________________________
 # %%
 # Let's try getting curl(B)
 
@@ -140,3 +145,23 @@ pos1,pos2,pos3,pos4 = 1e3*reform(pos1), 1e3*reform(pos2), 1e3*reform(pos3),1e3*r
 # %%
 
 # Next: Get reciprocal vectors, curl of B at every data point (4001 of them in this case)
+B1_new = np.zeros([ndata,3])
+B2_new = np.zeros([ndata,3])
+B3_new = np.zeros([ndata,3])
+B4_new = np.zeros([ndata,3])
+crl = np.zeros([ndata,3])
+
+# Get rid of Btotal value to keep B a 3D vector
+i=0
+for i in range(ndata-1):
+    B1_new[i] = B1[i][:-1]
+    B2_new[i] = B2[i][:-1] 
+    B3_new[i] = B3[i][:-1] 
+    B4_new[i] = B4[i][:-1]
+
+
+while i<ndata-1:
+    veclist = [B1_new[i],B2_new[i],B3_new[i],B4_new[i]]
+    klist = recip_vecs(pos1[i],pos2[i],pos3[i],pos4[i])
+    crl[i] = div(veclist,klist)
+    i+=1
