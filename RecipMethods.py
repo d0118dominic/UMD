@@ -13,7 +13,8 @@ from matplotlib.pyplot import plot
 
 # Define trange and get mec data from all 4 spacecraft
 probes = [1,2,3,4]
-trange = ['2016-12-09/09:02', '2016-12-09/09:04']
+trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 mec_vars = mec(probe = probes,trange=trange,data_rate='brst',time_clip=True)
 fgm_vars = fgm(probe = probes, data_rate = 'brst', trange=trange,time_clip=True)
 
@@ -30,7 +31,7 @@ def reform(var):
 			newvar[i] = var[1][i]
 	return newvar
 
-# %%
+## %%
 
 ## This block defines all the functions necessary to get:
 # Reciprocal vectors, divergence and curl for MMS and measured quantities
@@ -80,96 +81,88 @@ def recip_vecs(pos1,pos2,pos3,pos4):
 # Define divergence given a veclist and klist
 # where veclist is a list of some vector quantity measured at [MMS1,MMS2,MMS3,MMS4]
 # and klist is the list of reciprocal vectors [k1,k2,k3,k4]
-#def div(veclist, klist):
-#    i = 0
-#    div = 0
-#    while i < 4:
-#        div += np.dot(klist[i],veclist[i])
-#        i+=1
-#    return div
 
 def div(vec, klist):
     i = 0
     div = 0
-    while i < 4:
-        div += np.dot(klist[i],veclist[i])
-        i+=1
-    return div
-##%%  
-
-# %%
-#____________________________________________________
-# Something isn't working here 
+    for i in range(4):
+        div = div + np.dot(klist[i],veclist[i])
+    return div 
 def curl(veclist, klist):
     i = 0
     crl = np.array([0,0,0])
     for i in range(4):
         crl = crl + np.cross(klist[i],veclist[i])
-        i+=1
     return crl
-#%%
-
-# Let's try getting curl(B)
-
-
 ##%%
-# 
+
+# Getting Div and Curl of B (or any vector field.  just change fld_names in for loop)
 
 # Get all Bs and positions in np form and interpolted together
-
-B1_name = 'mms' + str(probes[0]) + '_fgm_b_gse_brst_l2'
-B2_name = 'mms' + str(probes[1]) + '_fgm_b_gse_brst_l2'
-B3_name = 'mms' + str(probes[2]) + '_fgm_b_gse_brst_l2'
-B4_name = 'mms' + str(probes[3]) + '_fgm_b_gse_brst_l2'
-
-pos1_name = 'mms'+ str(probes[0]) + '_mec_r_gsm'
-pos2_name = 'mms'+ str(probes[1]) + '_mec_r_gsm'
-pos3_name = 'mms'+ str(probes[2]) + '_mec_r_gsm'
-pos4_name = 'mms'+ str(probes[3]) + '_mec_r_gsm'
-
-tinterpol(B1_name,pos1_name, newname='B1')
-tinterpol(B2_name,pos2_name, newname='B2')
-tinterpol(B3_name,pos3_name, newname='B3')
-tinterpol(B4_name,pos4_name, newname='B4')
-
-B1_name,B2_name,B3_name,B4_name = 'B1','B2','B3','B4'
-	
-B1 = get_data(B1_name)
-B2 = get_data(B2_name)
-B3 = get_data(B3_name)
-B4 = get_data(B4_name)
-
-pos1 = get_data(pos1_name)
-pos2 = get_data(pos2_name)
-pos3 = get_data(pos3_name)
-pos4 = get_data(pos4_name)
-
-ndata = len(B1.times)
-
-B1,B2,B3,B4 = 1e-9*reform(B1), 1e-9*reform(B2), 1e-9*reform(B3),1e-9*reform(B4)
-pos1,pos2,pos3,pos4 = 1e3*reform(pos1), 1e3*reform(pos2), 1e3*reform(pos3),1e3*reform(pos4)
+# [0,1,2,3] = MMS[1,2,3,4]
+fld_names = [] # Names of the fields
+pos_names = [] # Names of positions 
+fld_interp_names = [] # interpolated version of field names 
+flds = [] # get_data for each field
+posits = [] # get_data for each position
 
 
-# %%
+# Factors to convert fld & position to SI units (change fldfact depending on fld, keep posfact as is)
+fldfact = 1e-9  
+posfact = 1e3 
 
-# Next: Get reciprocal vectors, curl of B at every data point (4001 of them in this case)
-B1_new = np.zeros([ndata,3])
-B2_new = np.zeros([ndata,3])
-B3_new = np.zeros([ndata,3])
-B4_new = np.zeros([ndata,3])
+# Get field and mec (position) data
+for i in range(4):
+    fld_names.append('mms' + str(probes[i]) + '_fgm_b_gse_brst_l2')  
+    pos_names.append('mms'+ str(probes[i]) + '_mec_r_gsm')
+    tinterpol(fld_names[i],pos_names[i],newname = 'B' + str(i+1)) #interpolate
+    fld_interp_names.append('B' + str(i+1))
+    flds.append(get_data(fld_interp_names[i]))
+    posits.append(get_data(pos_names[i]))
+
+# N data points and time axis (setting to different vars here bc flds will change form)
+# Also define shape of curl vs divergence (vector vs scalar)
+timeax = flds[0].times
+ndata = len(timeax)
 crl = np.zeros([ndata,3])
 divr = np.zeros([ndata])
 
-# Get rid of Btotal value to keep B a 3D vector
-for i in range(ndata-1):
-    B1_new[i] = B1[i][:-1]
-    B2_new[i] = B2[i][:-1] 
-    B3_new[i] = B3[i][:-1] 
-    B4_new[i] = B4[i][:-1]
 
+# Reform data into np arrays in SI units (flds and posits)
+for i in range(4):
+    flds[i] = fldfact*reform(flds[i]) # [fld1,fld2,fld3,fld4]
+    posits[i] = posfact*reform(posits[i]) # [pos1,pos2,pos3,pos4]
+
+
+##%%
+# If fld is 4D (usually because total is included), chop off the 4th term
+if len(flds[0][0]) == 4:   # Just put this here so its convenient to minimize in vscode
+    fld1 = np.zeros([ndata,3])
+    fld2 = np.zeros([ndata,3])
+    fld3 = np.zeros([ndata,3])
+    fld4 = np.zeros([ndata,3])
+    for i in range(ndata-1):
+        fld1[i] = flds[0][i][:-1]
+        fld2[i] = flds[1][i][:-1] 
+        fld3[i] = flds[2][i][:-1]
+        fld4[i] = flds[3][i][:-1]
+    flds = [fld1,fld2,fld3,fld4]
+
+# Get Div & Curl
 for i in range(ndata-1):
-    veclist = np.array([B1_new[i],B2_new[i],B3_new[i],B4_new[i]])
-    klist = recip_vecs(pos1[i],pos2[i],pos3[i],pos4[i])
+    veclist = [flds[0][i],flds[1][i],flds[2][i],flds[3][i]]
+    klist = recip_vecs(posits[0][i],posits[1][i],posits[2][i],posits[3][i])
     crl[i] = curl(veclist,klist)
     divr[i] = div(veclist,klist)
+
+
+store_data('curl', data = {'x':timeax, 'y': crl})
+options('curl', 'Color', ['b','g','r'])
+options('curl', 'ytitle', 'Curl(B) [mV/m]')
+
+store_data('div', data = {'x':timeax, 'y': divr})
+options('div', 'ytitle', 'Divergence(B) [mV/m]')
+
+
+tplot(['curl','div'])
 # %%
