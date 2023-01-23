@@ -9,6 +9,7 @@ from pytplot import options
 from pyspedas import tinterpol
 from pyspedas.mms import mec,fgm,fpi,edp,curlometer
 from pytplot import get_data, store_data
+from matplotlib.pyplot import plot
 
 # Define trange and get mec data from all 4 spacecraft
 probes = [1,2,3,4]
@@ -71,7 +72,7 @@ def recip_vecs(pos1,pos2,pos3,pos4):
     k3 = kvec(pos41,pos42,pos43)
     k4 = kvec(pos12,pos13,pos14)
 
-    klist = [k1,k2,k3,k4]
+    klist = np.array([k1,k2,k3,k4])
 
     return klist
 
@@ -79,14 +80,21 @@ def recip_vecs(pos1,pos2,pos3,pos4):
 # Define divergence given a veclist and klist
 # where veclist is a list of some vector quantity measured at [MMS1,MMS2,MMS3,MMS4]
 # and klist is the list of reciprocal vectors [k1,k2,k3,k4]
-def div(veclist, klist):
+#def div(veclist, klist):
+#    i = 0
+#    div = 0
+#    while i < 4:
+#        div += np.dot(klist[i],veclist[i])
+#        i+=1
+#    return div
+
+def div(vec, klist):
     i = 0
     div = 0
     while i < 4:
         div += np.dot(klist[i],veclist[i])
         i+=1
     return div
-
 ##%%  
 
 # %%
@@ -153,18 +161,15 @@ crl = np.zeros([ndata,3])
 divr = np.zeros([ndata])
 
 # Get rid of Btotal value to keep B a 3D vector
-i=0
 for i in range(ndata-1):
     B1_new[i] = B1[i][:-1]
     B2_new[i] = B2[i][:-1] 
     B3_new[i] = B3[i][:-1] 
     B4_new[i] = B4[i][:-1]
 
-
-while i<ndata-1:
-    veclist = [B1_new[i],B2_new[i],B3_new[i],B4_new[i]]
+for i in range(ndata-1):
+    veclist = np.array([B1_new[i],B2_new[i],B3_new[i],B4_new[i]])
     klist = recip_vecs(pos1[i],pos2[i],pos3[i],pos4[i])
     crl[i] = curl(veclist,klist)
     divr[i] = div(veclist,klist)
-    i+=1
 # %%
