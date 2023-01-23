@@ -41,7 +41,6 @@ def sepvec(a,b):
 
 # Gets a list of the reciprocal vectors [k1,k2,k3,k4]
 def recip_vecs(pos1,pos2,pos3,pos4):
-    positions = [pos1,pos2,pos3,pos4,pos1]
     
     # Define every possible separation vector
     # There has to be a cleaner way to do this part.  Keep for now
@@ -90,17 +89,18 @@ def div(veclist, klist):
 
 ##%%  
 
+# %%
 #____________________________________________________
 # Something isn't working here 
 def curl(veclist, klist):
     i = 0
-    curl = np.array([0,0,0])
-    while i < 4:
-        curl += np.cross(klist[i],veclist[i])
+    crl = np.array([0,0,0])
+    for i in range(4):
+        crl = crl + np.cross(klist[i],veclist[i])
         i+=1
-    return curl
-#___________________________________________________
-# %%
+    return crl
+#%%
+
 # Let's try getting curl(B)
 
 
@@ -150,6 +150,7 @@ B2_new = np.zeros([ndata,3])
 B3_new = np.zeros([ndata,3])
 B4_new = np.zeros([ndata,3])
 crl = np.zeros([ndata,3])
+divr = np.zeros([ndata])
 
 # Get rid of Btotal value to keep B a 3D vector
 i=0
@@ -163,5 +164,7 @@ for i in range(ndata-1):
 while i<ndata-1:
     veclist = [B1_new[i],B2_new[i],B3_new[i],B4_new[i]]
     klist = recip_vecs(pos1[i],pos2[i],pos3[i],pos4[i])
-    crl[i] = div(veclist,klist)
+    crl[i] = curl(veclist,klist)
+    divr[i] = div(veclist,klist)
     i+=1
+# %%
