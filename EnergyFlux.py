@@ -13,14 +13,15 @@ me = 9.1094e-31
 mi = 1837*me
 
 # Get Data
-probe  = 2
+probe  = 1
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
 scm_vars = scm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 # Change shape of fields bc they're confusing (will change them back eventually)
-#%%
+
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
 		newvar = np.zeros(len(var[0]))
@@ -33,7 +34,6 @@ def reform(var):
 	return newvar
 
 
-#%%
 # Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 def interp_to(var_name):
 	tinterpol(B_name,var_name, newname='B')
@@ -59,7 +59,6 @@ def interp_to(var_name):
 	ndata = len(B)
 	
 	return B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata
-#%%
 
 # Field names variables
 B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
@@ -74,15 +73,25 @@ scm_name = 'mms' + str(probe) + '_scm_acb_gse_scb_brst_l2'
 Pi_name = 'mms' + str(probe) + '_dis_prestensor_gse_brst'
 Pe_name = 'mms' + str(probe) + '_des_prestensor_gse_brst'
 
+ion = get_data(ni_name)
+elec = get_data(ne_name)
+Bfld = get_data(B_name)
+Efld = get_data(E_name)
+
 
 
 # Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 
-#%%
+
+## Energy Fluxes ##
+
+# Poynting S = ExB
+# Kinetic = 0.5*(n*mv^2)*v
+# Enthalpy = 0.5*v*Tr(P)  + v dot P
+# Q = ?
 
 # Poynting Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(B_name)  
-# S = ExB
 S = np.zeros_like(E)
 Bnew = np.zeros_like(E)
 Bold = B
@@ -91,28 +100,33 @@ for i in range(ndata-1):
 	S[i] = np.cross(E[i],Bnew[i])
 
 
-#%%
-
 # Electron Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(ve_name)  
-# Kinetic = 0.5*(n*mv^2)*v
 Ke = np.zeros_like(E)
 He = np.zeros_like(E)
-# Enthalpy = 0.5*v*Tr(P)  + v dot P
-# Need to deal with density in reform()
 for i in range(ndata-1):
 	Ke[i] = 0.5*me*ne[i]*ve[i]*np.linalg.norm(ve[i])**2
-# Ion Energy Flux
+	He[i] = 0.5*ve[i]*(Pe[0,0,0]+Pe[0,1,1]+Pe[0,2,2]) + np.dot(ve[i],Pe[i])
 
-#%%
+# Ion Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(vi_name)  
 Ki = np.zeros_like(E)
 Hi = np.zeros_like(E)
-
-
 for i in range(ndata-1):
 	Ki[i] = 0.5*mi*ni[i]*vi[i]*np.linalg.norm(vi[i])**2
+	Hi[i] = 0.5*vi[i]*(Pi[0,0,0]+Pi[0,1,1]+Pi[0,2,2]) + np.dot(vi[i],Pi[i])
 
 # Heat Flux (?)
 
+# Default units W/m^2
+store_data('S', data = {'x':Bfld.times, 'y': S})
+store_data('Ke', data = {'x':elec.times, 'y': Ke})
+store_data('He', data = {'x':elec.times, 'y': He})
+store_data('Ki', data = {'x':ion.times, 'y': Ki})
+store_data('Hi', data = {'x':ion.times, 'y': Hi})
+
+# The relative magnitudes seems fishy.  Or did I do it wrong years ago?
+names = ['S','Ke','He','Ki','Hi']
+options(names, 'Color', ['b','g','r'])
+tplot(['S','Ke','He','Ki','Hi'])
 # %%
