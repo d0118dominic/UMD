@@ -67,15 +67,14 @@ ndata = len(vi.times)
 
 # Change shape of fields bc they're confusing (will change them back eventually)
 def reform(var):
-	if isinstance(var[1][0],np.ndarray):   # Check if its a vector (of any dim > 1)
+	if isinstance(var[1][0][0],np.ndarray):
+		newvar = np.zeros([len(var[0]),len(var[1][0]),len(var[1][0][0])])
+	elif isinstance(var[1][0],np.ndarray):		
 		newvar = np.zeros([len(var[0]),len(var[1][0])])
-		for i in range(0,len(var[0])-1):
-			for j in range(0,len(var[1][0])):
-				newvar[i,j] = var[1][i][j]
-	else:                                  # Assume anything else is a scalar
+	else:
 		newvar = np.zeros([len(var[0])])
-		for i in range(0,len(var[0])-1):
-			newvar[i] = var[1][i]
+	for i in range(0,len(var[0])-1):
+		newvar[i] = var[1][i]
 	return newvar
 
 # Gets E+vxB in SI units
