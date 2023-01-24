@@ -67,13 +67,13 @@ ndata = len(vi.times)
 
 # Change shape of fields bc they're confusing (will change them back eventually)
 def reform(var):
-	if isinstance(var[1][0][0],np.ndarray):
+	if not isinstance(var[1][0],np.ndarray):
+		newvar = np.zeros(len(var[0]))
+	elif isinstance(var[1][0][0],np.ndarray):
 		newvar = np.zeros([len(var[0]),len(var[1][0]),len(var[1][0][0])])
 	elif isinstance(var[1][0],np.ndarray):		
 		newvar = np.zeros([len(var[0]),len(var[1][0])])
-	else:
-		newvar = np.zeros([len(var[0])])
-	for i in range(0,len(var[0])-1):
+	for i in range(len(var[0])-1):
 		newvar[i] = var[1][i]
 	return newvar
 

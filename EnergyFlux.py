@@ -106,11 +106,13 @@ for i in range(ndata-1):
 
 #%%
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(vi_name)  
-Ki = np.zeros_like(B)
-Hi = np.zeros_like(B)
+Ki = np.zeros_like(E)
+Hi = np.zeros_like(E)
 
 
 for i in range(ndata-1):
 	Ki[i] = 0.5*mi*ni[i]*vi[i]*np.linalg.norm(vi[i])**2
 
 # Heat Flux (?)
+
+# %%
