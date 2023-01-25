@@ -9,13 +9,19 @@ from pyspedas.mms import mec,fgm,fpi,edp,scm
 from pytplot import get_data, store_data
 from matplotlib.pyplot import plot
 from matplotlib.pyplot import scatter
-me = 9.1094e-31
+me = 9.1094e-31 #kg
 mi = 1837*me
+mu0 = 1.2566370e-06  #;m kg / C^2
+
+# Still working out Units issues...
+
 
 # Get Data
 probe  = 1
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+#trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
@@ -89,7 +95,7 @@ Efld = get_data(E_name)
 # Kinetic = 0.5*(n*mv^2)*v
 # Enthalpy = 0.5*v*Tr(P)  + v dot P
 # Q = ?
-
+#%%
 # Poynting Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(B_name)  
 S = np.zeros_like(E)
@@ -97,7 +103,7 @@ Bnew = np.zeros_like(E)
 Bold = B
 for i in range(ndata-1):
 	Bnew[i] = B[i,:-1]
-	S[i] = np.cross(E[i],Bnew[i])
+	S[i] = np.cross(E[i],Bnew[i]) / mu0
 
 
 # Electron Energy Flux
