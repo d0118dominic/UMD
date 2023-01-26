@@ -5,6 +5,7 @@ from pytplot import tplot
 import numpy as np
 from pytplot import options
 from pyspedas import tinterpol
+from pytplot import tplot_options
 from pyspedas.mms import mec,fgm,fpi,edp,scm
 from pytplot import get_data, store_data
 from matplotlib.pyplot import plot
@@ -19,8 +20,8 @@ mu0 = 1.2566370e-06  #;m kg / C^2
 # Get Data
 probe  = 1
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
-trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+#trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+#trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
@@ -109,7 +110,7 @@ Ke = np.zeros_like(E)
 He = np.zeros_like(E)
 for i in range(ndata-1):
 	Ke[i] = 0.5*me*ne[i]*ve[i]*np.linalg.norm(ve[i])**2
-	He[i] = 0.5*ve[i]*(Pe[0,0,0]+Pe[0,1,1]+Pe[0,2,2]) + np.dot(ve[i],Pe[i])
+	He[i] = 0.5*ve[i]*np.trace(Pe[i]) + np.dot(ve[i],Pe[i])
 
 # Ion Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(vi_name)  
@@ -117,7 +118,7 @@ Ki = np.zeros_like(E)
 Hi = np.zeros_like(E)
 for i in range(ndata-1):
 	Ki[i] = 0.5*mi*ni[i]*vi[i]*np.linalg.norm(vi[i])**2
-	Hi[i] = 0.5*vi[i]*(Pi[0,0,0]+Pi[0,1,1]+Pi[0,2,2]) + np.dot(vi[i],Pi[i])
+	Hi[i] = 0.5*vi[i]*np.trace(Pi[i]) + np.dot(vi[i],Pi[i])
 
 # Heat Flux (?)
 
@@ -131,5 +132,6 @@ store_data('Hi', data = {'x':ion.times, 'y': Hi})
 # The relative magnitudes seems fishy.  Or did I do it wrong years ago?
 names = ['S','Ke','He','Ki','Hi']
 options(names, 'Color', ['b','g','r'])
+tplot_options('vertical_spacing',0.3)
 tplot(['S','Ke','He','Ki','Hi'])
 # %%

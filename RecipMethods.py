@@ -81,7 +81,7 @@ def recip_vecs(pos1,pos2,pos3,pos4):
 # where veclist is a list of some vector quantity measured at [MMS1,MMS2,MMS3,MMS4]
 # and klist is the list of reciprocal vectors [k1,k2,k3,k4]
 
-def div(vec, klist):
+def div(veclist, klist):
     i = 0
     div = 0
     for i in range(4):

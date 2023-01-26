@@ -23,7 +23,7 @@ event3 = ['2015-12-08/11:39:14','2015-12-08/11:41:53']
 # Get Data
 probe  = 1
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
-trange = event1
+trange = event2
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
 # Change shape of fields bc they're confusing (will change them back eventually)
