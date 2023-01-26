@@ -99,11 +99,8 @@ Efld = get_data(E_name)
 # Poynting Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(B_name)  
 S = np.zeros_like(E)
-Bnew = np.zeros_like(E)
-Bold = B
 for i in range(ndata-1):
-	Bnew[i] = B[i,:-1]
-	S[i] = np.cross(E[i],Bnew[i]) / mu0
+	S[i] = np.cross(E[i],B[i,:-1]) / mu0
 
 
 # Electron Energy Flux
