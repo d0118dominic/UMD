@@ -13,22 +13,37 @@ from matplotlib.pyplot import scatter
 me = 9.1094e-31 #kg
 mi = 1837*me
 mu0 = 1.2566370e-06  #;m kg / C^2
+eps0 = 8.85e-12   # C^2/Nm^2
 
-# Still working out Units issues...
+# This code now works.  Produces same result as Eastwood 2020 (aside from small frame shift.)
+# Everything is in SI units.  Any other unit conversion should happen at the end when making the tplot variable
 
 
 # Get Data
-probe  = 1
-trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+#trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 #trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
 #trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
-#trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
+trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
+
+burch = ['2015-12-08/11:20:00','2015-12-08/11:21:00']
+event1 = ['2015-12-08/11:27:00','2015-12-08/11:30:00']
+event2 = ['2015-12-08/11:33:44','2015-12-08/11:34:53']
+event3 = ['2015-12-08/11:39:14','2015-12-08/11:41:53']
+event3s = ['2015-12-08/11:39:30','2015-12-08/11:41:30']
+allevents = ['2015-12-08/11:27:00','2015-12-08/11:41:53']
+gen = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+
+
+probe  =1 
+trange = burch
+
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
 scm_vars = scm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
-# Change shape of fields bc they're confusing (will change them back eventually)
+#%%
 
+# Function to change shape of fields to np arrays (will change them back eventually)
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
 		newvar = np.zeros(len(var[0]))
@@ -40,7 +55,51 @@ def reform(var):
 		newvar[i] = var[1][i]
 	return newvar
 
+# LMN Conversion function
+def convert_lmn(gse, lmn):
+    vec = np.zeros_like(gse)
+    for i in range(3):
+        vec[i] = np.dot(lmn[i],gse)
+    return vec
 
+
+# Functions for energy densites and fluxes #
+# Still unsure, but should be correct within ord of mag
+# Poynting S = ExB
+# Kinetic = 0.5*(n*mv^2)*v
+# Enthalpy = 0.5*v*Tr(P)  + v dot P
+# Q = ?
+def therm_dens(P):
+	ut = 0.5*np.trace(P)
+	return ut
+
+def kinetic_dens(m,n,v):
+	uk = 0.5*m*n*np.linalg.norm(v)**2
+	return uk
+
+def B_dens(B):
+	um = 0.5*(np.linalg.norm(B)**2)*mu0**-1
+	return um
+
+def E_dens(E):
+	ue = 0.5*eps0*np.linalg.norm(E)**2
+	return E
+
+def kin_flux(m,n,v):
+	K = 0.5*m*n*v**3
+	#K = 0.5*m*n*v*np.linalg.norm(v)**2# this uses |v|*v
+	return K
+
+# This works now even though its literally identical to the old version that didnt work..
+def enth_flux(v,P):
+	H = 0.5*v*np.trace(P) + np.dot(v,P)
+	return H
+#%%
+def Poynt_flux(E,B):
+	S = np.cross(E,B)/mu0
+	return S
+
+# Function to read data, interpolate, convert to SI units, and come out in the form of np arrays
 # Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 def interp_to(var_name):
 	tinterpol(B_name,var_name, newname='B')
@@ -87,40 +146,49 @@ Efld = get_data(E_name)
 
 
 
-# Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 
-
-## Energy Fluxes ##
-
-# Poynting S = ExB
-# Kinetic = 0.5*(n*mv^2)*v
-# Enthalpy = 0.5*v*Tr(P)  + v dot P
-# Q = ?
 #%%
+
+
+lmn_0810 = np.array([
+[0.985, -0.141, 0.097],
+[0.152, 0.982, -0.109],
+[-0.080, 0.122, 0.989]])
+
+lmn_1016 = np.array([
+[0.3665, -0.1201, 0.9226],
+[0.5694, -0.7553, -0.3245],
+[0.7358, 0.6443, -0.2084]])
+
+I = np.identity(3)
+
+frame = lmn_1016
+
 # Poynting Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(B_name)  
 S = np.zeros_like(E)
 for i in range(ndata-1):
-	S[i] = np.cross(E[i],B[i,:-1]) / mu0
+	S[i] = convert_lmn(Poynt_flux(E[i],B[i,:-1]),frame)
 
 
+#%%
 # Electron Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(ve_name)  
 Ke = np.zeros_like(E)
 He = np.zeros_like(E)
 for i in range(ndata-1):
-	Ke[i] = 0.5*me*ne[i]*ve[i]*np.linalg.norm(ve[i])**2
-	He[i] = 0.5*ve[i]*np.trace(Pe[i]) + np.dot(ve[i],Pe[i])
+	He[i] = convert_lmn(enth_flux(ve[i],Pe[i]),frame) #for some reason this works now
+	#He[i] = convert_lmn(0.5*ve[i]*np.trace(Pe[i]) + np.dot(ve[i],Pe[i]),frame)
+	Ke[i] = convert_lmn(kin_flux(me,ne[i],ve[i]),frame)  # this uses v^3  #unclear which is more correct. Eastwood uses v^3
 
 # Ion Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(vi_name)  
 Ki = np.zeros_like(E)
 Hi = np.zeros_like(E)
 for i in range(ndata-1):
-	Ki[i] = 0.5*mi*ni[i]*vi[i]*np.linalg.norm(vi[i])**2
-	Hi[i] = 0.5*vi[i]*np.trace(Pi[i]) + np.dot(vi[i],Pi[i])
-
-# Heat Flux (?)
+	Hi[i] = convert_lmn(enth_flux(vi[i],Pi[i]),frame)
+	#Hi[i] = convert_lmn(0.5*vi[i]*np.trace(Pi[i]) + np.dot(vi[i],Pi[i]),frame)
+	Ki[i] = convert_lmn(kin_flux(mi,ni[i],vi[i]),frame)  
 
 # Default units W/m^2
 store_data('S', data = {'x':Bfld.times, 'y': S})
@@ -129,7 +197,7 @@ store_data('He', data = {'x':elec.times, 'y': He})
 store_data('Ki', data = {'x':ion.times, 'y': Ki})
 store_data('Hi', data = {'x':ion.times, 'y': Hi})
 
-# The relative magnitudes seems fishy.  Or did I do it wrong years ago?
+
 names = ['S','Ke','He','Ki','Hi']
 options(names, 'Color', ['b','g','r'])
 tplot_options('vertical_spacing',0.3)
