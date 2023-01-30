@@ -1,16 +1,12 @@
 # Converts ps to png
+#%%
 from PIL import Image
 import os
+import glob
 
+files = glob.glob('figs/*ps')
 
-
-Choice = input("What is filename in filename.ps?       ")
-
-def convert():
-	img = Image.open(str(Choice) + '.ps')
-	img.save(str(Choice) + '.png')
-
-
-convert()
-
-
+for i in range(len(files)):
+	img = Image.open(files[i])
+	img.save(str(files[i][:-3]) + '.png')
+	print(files[i])
