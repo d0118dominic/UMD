@@ -22,8 +22,8 @@ event3 = ['2015-12-08/11:39:14','2015-12-08/11:41:53']
 
 # Get Data
 probe  = 1
-trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
-trange = event2
+trange = event1 
+
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
 # Change shape of fields bc they're confusing (will change them back eventually)
@@ -103,10 +103,10 @@ for i in range(ndata-1):
 #Qi = np.zeros(ndata)
 #for i in range(ndata-1):
 #	Qi[i] = get_Q(Pi[i],B[i])
-
+#%%
 store_data('Q', data = {'x':ion.times, 'y':np.sqrt(Q)})
 options('Q', 'Color', ['b','r'])
-options('Q', 'thick', 2)
+options('Q', 'thick', 1)
 options('Q','legend_names', ['Qe^1/2','Qi^1/2'])
 tplot_options('var_label',['Qe','Qi'])
 
