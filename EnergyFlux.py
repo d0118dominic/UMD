@@ -17,7 +17,7 @@ eps0 = 8.85e-12   # C^2/Nm^2
 
 # This code now works.  Produces same result as Eastwood 2020 (aside from small frame shift.)
 # Everything is in SI units.  Any other unit conversion should happen at the end when making the tplot variable
-
+##
 
 # Get Data
 #trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
