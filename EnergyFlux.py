@@ -94,6 +94,22 @@ def kin_flux(m,n,v):
 def enth_flux(v,P):
 	H = 0.5*v*np.trace(P) + np.dot(v,P)
 	return H
+
+# Functions for Power densities (J.E, J.E', -PdotGrad(u), du/dt, Div(S))
+def get_j(n,vi,ve):
+	q = 1.6e-19 # charge unit in SI
+	j = q*n*(vi - ve)
+	return j
+	
+#def get_curlometer_j()
+
+def get_Eprime(E,v,B):
+	Ep = E + np.cross(v,B)
+	return Ep
+
+
+ 
+
 #%%
 def Poynt_flux(E,B):
 	S = np.cross(E,B)/mu0
@@ -128,7 +144,7 @@ def interp_to(var_name):
 
 # Field names variables
 B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
-E_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
+E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
 vi_name = 'mms' + str(probe) + '_' + 'dis' + '_bulkv_gse_brst'
 ve_name = 'mms' + str(probe) + '_' + 'des' + '_bulkv_gse_brst'
 B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'

@@ -17,6 +17,7 @@ trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 mec_vars = mec(probe = probes,trange=trange,data_rate='brst',time_clip=True)
 fgm_vars = fgm(probe = probes, data_rate = 'brst', trange=trange,time_clip=True)
+edp_vars = edp(probe = probes,data_rate = 'brst',trange=trange,time_clip=True) 
 #%%
 # Change shape of fields bc they're confusing (will change them back eventually)
 
@@ -138,6 +139,7 @@ posfact = 1e3
 # Get field and mec (position) data
 for i in range(4):
     fld_names.append('mms' + str(probes[i]) + '_fgm_b_gse_brst_l2') #Change this if you want to calc for another vec quantity  
+    #fld_names.append('mms' + str(probes[i]) + '_edp_dce_gse_brst_l2') #Change this if you want to calc for another vec quantity  
     pos_names.append('mms'+ str(probes[i]) + '_mec_r_gsm')
     tinterpol(fld_names[i],pos_names[i],newname = 'B' + str(i+1)) #interpolate
     fld_interp_names.append('B' + str(i+1))
