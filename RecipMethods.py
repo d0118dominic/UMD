@@ -5,16 +5,16 @@
 import pyspedas
 from pytplot import tplot
 import numpy as np
-from pytplot import options
+from pytplot import options, tplot_options
 from pyspedas import tinterpol
 from pyspedas.mms import mec,fgm,fpi,edp,curlometer
 from pytplot import get_data, store_data
 from matplotlib.pyplot import plot
-
+#%%
 # Define trange and get mec data from all 4 spacecraft
 probes = [1,2,3,4]
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+#trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 mec_vars = mec(probe = probes,trange=trange,data_rate='brst',time_clip=True)
 fgm_vars = fgm(probe = probes, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probes,data_rate = 'brst',trange=trange,time_clip=True) 
@@ -180,15 +180,14 @@ for i in range(ndata-1):
     klist = recip_vecs(posits[0][i],posits[1][i],posits[2][i],posits[3][i])
     crl[i] = curl(veclist,klist)
     divr[i] = div(veclist,klist)
-
+#%%
 # If you want to convert to more convenient non-SI units, do so here.
 store_data('curl', data = {'x':timeax, 'y': crl})
 options('curl', 'Color', ['b','g','r'])
 options('curl', 'ytitle', 'Curl(B)')
-
+options('curl','legend_names', ['x','y','z'])
 store_data('div', data = {'x':timeax, 'y': divr})
 options('div', 'ytitle', 'Divergence(B)')
-
 
 tplot(['curl','div'])
 # %%

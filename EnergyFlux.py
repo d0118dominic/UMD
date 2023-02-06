@@ -22,7 +22,7 @@ eps0 = 8.85e-12   # C^2/Nm^2
 # Get Data
 #trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-#trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 
 burch = ['2015-12-08/11:20:00','2015-12-08/11:21:00']
@@ -35,7 +35,7 @@ gen = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #
 
 probe  =1 
-trange = event1
+trange = trange
 
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
@@ -181,6 +181,12 @@ lmn_0711 = np.array([
 [0.18182, 0.92451, -0.334996],
 [0.26042, 0.28324, 0.92301]])
 
+
+lmn_0617 = np.array([
+[0.93, 0.3, -0.2],
+[-0.27, 0.2, -0.94],
+[-0.24, 0.93, 0.27]])
+
 I = np.identity(3)
 
 frame = I
@@ -192,7 +198,6 @@ for i in range(ndata-1):
 	S[i] = convert_lmn(Poynt_flux(E[i],B[i,:-1]),frame)
 
 
-#%%
 # Electron Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(ve_name)  
 Ke = np.zeros_like(E)
@@ -225,3 +230,4 @@ tplot_options('vertical_spacing',0.3)
 tplot(['S','Ke','He','Ki','Hi'])
 # %%
 #Testtextt
+# %%
