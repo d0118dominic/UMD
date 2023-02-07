@@ -34,7 +34,7 @@ allevents = ['2015-12-08/11:27:00','2015-12-08/11:41:53']
 gen = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #
 
-probe  =1 
+probe  = 1 
 trange = trange
 
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
