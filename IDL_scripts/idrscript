@@ -1,0 +1,30 @@
+@fluxscript
+
+n = n_elements(az[0,0,*])
+
+exx = fltarr(2048,1024,121)
+eyy = fltarr(2048,1024,121)
+ezz = fltarr(2048,1024,121)
+smooth = 25
+;for i = 0,n-1 do begin 
+;	exx[*,*,i] = smooth(ex[*,*,i],smooth)
+;	eyy[*,*,i] = smooth(ey[*,*,i],smooth)
+;	ezz[*,*,i] = smooth(ez[*,*,i],smooth)
+
+ex = exx
+ey = eyy
+ez = ezz
+
+vix = jix/deni
+viy = jiy/deni
+viz = jiz/deni
+
+vcbx = viy*bz - viz*by
+vcby = viz*bx - vix*bz
+vcbz = vix*by - viy*bx
+
+
+eprimex = ex + vcbx
+eprimey = ey + vcby
+eprimez = ez + vcbz
+

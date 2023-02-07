@@ -1,0 +1,54 @@
+restore, 'Rates_Bn.sav'
+set_plot, 'PS'
+device,/color,/encapsulated, filename='Bn_compare.ps'
+
+loadct, 39
+tvlct,r,g,b,/get
+
+r = 230
+b = 50
+
+x = [0:240:0.25]
+plot, x,flux_Bn1[0:240], yrange = [0,50],xrange=[0,240],chars=1.5
+oplot, x,flux_Bn04,color=r
+oplot, x,flux_Bn02,color=b
+
+device,/close
+
+device,/color,/encapsulated, filename='Bn_norm_compare.ps'
+set_plot, 'PS'
+plot, x,flux_Bn1, yrange = [0,200],xrange=[0,240],chars=1.5
+oplot, x,flux_Bn04/0.4,color=r
+oplot, x,flux_Bn02/0.2, color=b
+device, /close
+
+device,/color,/encapsulated, filename='Bn_rate_compare.ps'
+set_plot, 'PS'
+
+ax1 = [0:90:0.25]
+ax04 = [0:120:0.25]
+ax02 = [0:240:0.25]
+
+smoothint = 30
+dx1 = smooth(deriv(ax1,flux_Bn1),smoothint)
+dx04 = smooth(deriv(ax04,flux_Bn04),smoothint)
+dx02 = smooth(deriv(ax02,flux_Bn02),smoothint)
+
+plot, ax1[0:-17],dx1[0:-17], yrange = [0,1.5],xrange=[0,240],chars=1.5
+oplot, ax04[0:-17],dx04[0:-17],color=r
+oplot, ax02[0:-17],dx02[0:-17],color=b
+
+device, /close
+
+
+
+device,/color,/encapsulated,filename='Bn_normrate_compare.ps'
+set_plot, 'PS'
+
+smoothint = 30
+
+
+plot, ax1[0:-17], dx1[0:-17],yrange=[0,3],xrange=[0,250],chars=1.5
+oplot, ax02[0:-17], dx02[0:-17]/0.2,color=b
+oplot, ax04[0:-17], dx04[0:-17]/0.4,color=r
+device, /close

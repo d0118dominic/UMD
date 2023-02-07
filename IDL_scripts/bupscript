@@ -1,0 +1,7 @@
+@fluxscript
+
+n = n_elements(az[0,0,*])
+for i = 0,n-1 do begin:
+	xline = where(az[*,511,i] eq max(az[*,511,i]))
+	bup[i] = bx[xline,519,i] 
+

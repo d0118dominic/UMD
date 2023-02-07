@@ -1,0 +1,49 @@
+restore, 'Rates_w0.sav'
+
+device,/color,/encapsulated, filename='w0_compare.ps'
+set_plot, 'PS'
+
+loadct, 39
+tvlct,r,g,b,/get
+
+r = 230
+b = 50
+
+x = [0:90:0.25]
+plot, x,flux1, yrange = [0,150],xrange=[0,70],chars=1.5
+oplot, x,flux3,color=r
+device,/close
+
+device,/color,/encapsulated, filename='w0_norm_compare.ps'
+set_plot, 'PS'
+
+plot, x,flux1, yrange = [0,150],xrange=[0,70],chars=1.5
+oplot, x,3*flux3,color=r
+
+device,/close
+
+
+
+device,/color,/encapsulated, filename='w0_normrate_compare.ps'
+set_plot, 'PS'
+
+smoothint = 30
+dx1 = smooth(deriv(x,flux1),smoothint)
+dx3 = smooth(deriv(x,flux3),smoothint)
+
+plot, x,dx1, yrange = [0,10],xrange=[0,70],chars=1.5
+oplot, x,3*dx3,color=r
+
+device, /close
+
+
+
+device,/color,/encapsulated, filename='w0_rate_compare.ps'
+set_plot, 'PS'
+
+smoothint = 30
+
+plot, x,dx1, yrange = [0,10],xrange=[0,70],chars=1.5
+oplot, x,dx3,color=r
+
+device, /close

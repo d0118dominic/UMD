@@ -1,0 +1,16 @@
+restore, 'Rates_w0wn.sav'
+set_plot, 'PS'
+;device, filename='w0wn_compare.ps'
+device,/color,/helvetica,/encapsulated, filename='w0wn_compare.ps'
+
+
+loadct, 39
+tvlct,r,g,b,/get
+
+thick=1.5
+x = [0:120:0.25]
+plot, x,flux32, yrange = [0,5],xrange=[0,30],thick=thick,chars=1.5
+oplot, x,flux12,thick=thick, color=230
+oplot, x,flux33,thick=thick,color=50
+oplot, x,flux13,thick=thick,color=25
+device,/close
