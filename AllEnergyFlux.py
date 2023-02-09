@@ -1,6 +1,8 @@
 # Script to obtain Energy fluxes for all spacecraft and get their Div/Curl
 
 # Produces all quantities without error, but this is only a frst pass.  Might be some hidden issues
+
+#%%
 import pyspedas
 from pytplot import tplot
 import numpy as np
@@ -35,8 +37,10 @@ lmn_0617 = np.array([
 I = np.identity(3)
 
 # Get Data
-#trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+
+#trange = ['2016-11-09/13:38:00', '2016-11-09/13:40:00']
 #trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 
@@ -181,7 +185,7 @@ def get_Eprime(E,v,B):
 # Function to read data, interpolate, convert to SI units, and come out in the form of np arrays
 # Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 def AllFluxes(probe):
-	frame = I  #Keeping in GSE for now.  can convert to LMN at the end if desired
+	frame = lmn_0711  #Keeping in GSE for now.  can convert to LMN at the end if desired
 	# Field names variables
 	B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
 	E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
@@ -308,19 +312,37 @@ for i in range(ndata-1):
 
 #%%
 # Default units W/m^2
-# store_data('S'+str(probe), data = {'x':Bfld.times, 'y': S})
-# store_data('Ke'+str(probe), data = {'x':elec.times, 'y': Ke})
-# store_data('He'+str(probe), data = {'x':elec.times, 'y': He})
-# store_data('Ki'+str(probe), data = {'x':ion.times, 'y': Ki})
-# store_data('Hi'+str(probe), data = {'x':ion.times, 'y': Hi})
-# names = names + ['S'+str(probe), 'Ke'+str(probe),'He'+str(probe),'Ki'+str(probe),'Hi'+str(probe)]
+Slist = [S1,S2,S3,S4]
+Hilist = [Hi1,Hi2,Hi3,Hi4]
+Helist = [He1,He2,He3,He4]
+Kilist = [Ki1,Ki2,Ki3,Ki4]
+Kelist = [Ke1,Ke2,Ke3,Ke4]
+names = []
+
+for i in range(4):
+	store_data('S'+str(i+1), data = {'x':timeax, 'y': Slist[i]})
+	store_data('Ke'+str(i+1), data = {'x':timeax, 'y': Kelist[i]})
+	store_data('He'+str(i+1), data = {'x':timeax, 'y': Helist[i]})
+	store_data('Ki'+str(i+1), data = {'x':timeax, 'y': Kilist[i]})
+	store_data('Hi'+str(i+1), data = {'x':timeax, 'y': Hilist[i]})
+	names = names + ['S'+str(i+1), 'Ke'+str(i+1),'He'+str(i+1),'Ki'+str(i+1),'Hi'+str(i+1)]
 
 
 
+#Why isn't MMS4 showing up in tplot?
 
-
+store_data('divS', data = {'x':timeax, 'y': div_S})
+store_data('divHi', data = {'x':timeax, 'y': div_Hi})
+store_data('divHe', data = {'x':timeax, 'y': div_He})
+store_data('divKi', data = {'x':timeax, 'y': div_Ki})
+store_data('divKe', data = {'x':timeax, 'y': div_Ke})
+divnames = ['divS','divHi','divHe','divKi','divKe']
+#options(divnames, 'yrange', [-1e-8,1e-8])
+options(names, 'thick',1.5)
+#tplot(names)
 # # %%
 # names = ['S','Ke','He','Ki','Hi']
 # options(names, 'Color', ['b','g','r'])
 # tplot_options('vertical_spacing',0.3)
 # tplot(['S','Ke','He','Ki','Hi'])
+# %%
