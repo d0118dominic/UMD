@@ -26,7 +26,9 @@ eps0 = 8.85e-12   # C^2/Nm^2
 # Define trange and get mec data from all 4 spacecraft
 probes = [1,2,3,4]
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+#trange = ['2016-11-09/13:38:00', '2016-11-09/13:40:00']
+
+# trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 #trange = ['2015-12-08/11:27:00','2015-12-08/11:30:00']
 #trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 mec_vars = mec(probe = probes,trange=trange,data_rate='brst',time_clip=True)
@@ -216,7 +218,7 @@ store_data('J_mom', data = {'x':timeax, 'y': j_mom})
 store_data('percent error', data = {'x':timeax, 'y': err})
 store_data('|difference|', data = {'x':timeax, 'y': diff})
 options(tnames, 'Color', ['b','g','r'])
-options(tnames, 'yrange', [-0.5e-7,2e-7])
+options(tnames, 'yrange', [-1e-7,2e-7])
 options('percent error', 'yrange', [0,1000])
 options('J_crl', 'ytitle', 'Curl(B)/mu0')
 options('J_mom', 'ytitle', '< J >')

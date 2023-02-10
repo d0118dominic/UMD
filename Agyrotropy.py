@@ -19,10 +19,11 @@ mu0 = 1.2566370e-06  #;m kg / C^2
 event1 = ['2015-12-08/11:27:00','2015-12-08/11:30:00']
 event2 = ['2015-12-08/11:33:44','2015-12-08/11:34:53']
 event3 = ['2015-12-08/11:39:14','2015-12-08/11:41:53']
+trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
 
 # Get Data
 probe  = 1
-trange = event1 
+trange = trange 
 
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)

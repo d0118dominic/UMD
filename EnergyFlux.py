@@ -7,7 +7,7 @@ from pytplot import options
 from pyspedas import tinterpol
 from pytplot import tplot_options
 from pyspedas.mms import mec,fgm,fpi,edp,scm
-from pytplot import get_data, store_data
+from pytplot import get_data, store_data, timespan
 from matplotlib.pyplot import plot
 from matplotlib.pyplot import scatter
 me = 9.1094e-31 #kg
@@ -22,7 +22,7 @@ eps0 = 8.85e-12   # C^2/Nm^2
 # Get Data
 #trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+#trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 
 burch = ['2015-12-08/11:20:00','2015-12-08/11:21:00']
@@ -34,7 +34,7 @@ allevents = ['2015-12-08/11:27:00','2015-12-08/11:41:53']
 gen = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
 #
 
-probe  = 1 
+probe  = 3 
 trange = trange
 
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
@@ -83,7 +83,7 @@ def B_dens(B):
 
 def E_dens(E):
 	ue = 0.5*eps0*np.linalg.norm(E)**2
-	return E
+	return ue
 
 def kin_flux(m,n,v):
 	K = 0.5*m*n*v**3
@@ -189,32 +189,56 @@ lmn_0617 = np.array([
 
 I = np.identity(3)
 
-frame = I
+frame = lmn_0711
 
 # Poynting Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(B_name)  
 S = np.zeros_like(E)
+uB = np.zeros_like(ne)
+uE = np.zeros_like(ne)
+uEM = np.zeros([ndata, 2])
 for i in range(ndata-1):
 	S[i] = convert_lmn(Poynt_flux(E[i],B[i,:-1]),frame)
+	uB[i] = B_dens(B[i,:-1])
+	uE[i] = E_dens(E[i])
+	uEM[i] = np.array([uE[i],uB[i]])
 
 
 # Electron Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(ve_name)  
 Ke = np.zeros_like(E)
 He = np.zeros_like(E)
+ute = np.zeros_like(ne)
+uke = np.zeros_like(ne)
+upe = np.zeros([ndata,2])
+
 for i in range(ndata-1):
 	He[i] = convert_lmn(enth_flux(ve[i],Pe[i]),frame) #for some reason this works now
 	#He[i] = convert_lmn(0.5*ve[i]*np.trace(Pe[i]) + np.dot(ve[i],Pe[i]),frame)
 	Ke[i] = convert_lmn(kin_flux(me,ne[i],ve[i]),frame)  # this uses v^3  #unclear which is more correct. Eastwood uses v^3
+	ute[i] = therm_dens(Pe[i])
+	uke[i] = kinetic_dens(me,ne[i],ve[i])
+	upe[i] = np.array([ute[i],uke[i]])
+
+
 
 # Ion Energy Flux
 B,E,vi,ve,B_scm,ni,ne,Pi,Pe,ndata = interp_to(vi_name)  
 Ki = np.zeros_like(E)
 Hi = np.zeros_like(E)
+uti = np.zeros_like(ne)
+uki = np.zeros_like(ne)
+upi = np.zeros([ndata,2])
+
 for i in range(ndata-1):
 	Hi[i] = convert_lmn(enth_flux(vi[i],Pi[i]),frame)
 	#Hi[i] = convert_lmn(0.5*vi[i]*np.trace(Pi[i]) + np.dot(vi[i],Pi[i]),frame)
-	Ki[i] = convert_lmn(kin_flux(mi,ni[i],vi[i]),frame)  
+	Ki[i] = convert_lmn(kin_flux(mi,ni[i],vi[i]),frame) 
+	uti[i] = therm_dens(Pi[i])
+	uki[i] = kinetic_dens(mi,ni[i],vi[i])
+	upi[i] = np.array([uti[i],uki[i]])
+
+
 
 # Default units W/m^2
 store_data('S', data = {'x':Bfld.times, 'y': S})
@@ -222,12 +246,37 @@ store_data('Ke', data = {'x':elec.times, 'y': Ke})
 store_data('He', data = {'x':elec.times, 'y': He})
 store_data('Ki', data = {'x':ion.times, 'y': Ki})
 store_data('Hi', data = {'x':ion.times, 'y': Hi})
-
+store_data('ue', data = {'x':Bfld.times,'y':uE})
+store_data('ub', data = {'x':Bfld.times,'y':uB})
+store_data('ute', data = {'x':elec.times,'y':ute})
+store_data('uke', data = {'x':elec.times,'y':uke})
+store_data('uti', data = {'x':ion.times,'y':uti})
+store_data('uki', data = {'x':ion.times,'y':uki})
+store_data('uem', data = {'x':Bfld.times,'y':uEM})
+store_data('upe', data = {'x':elec.times,'y':upe})
+store_data('upi', data = {'x':ion.times,'y':upi})
 
 names = ['S','Ke','He','Ki','Hi']
+names2 = ['ue','ub','ute','uke']
+names3 = ['upe','upi']
 options(names, 'Color', ['b','g','r'])
+options(names, 'thick', 1.5)
+options(names2, 'thick', 1.5)
+options('uem','Color',['r','b'] )
+options('uem', 'thick', 1.5)
+options('uem','legend_names', ['ue','ub'])
+options('upe','Color',['r','b'] )
+options('upe', 'thick', 1.5)
+options('upe','legend_names', ['ute','uke'])
+options('upi','Color',['r','b'] )
+options('upi', 'thick', 1.5)
+options('upi','legend_names', ['uti','uki'])
+options(names3, 'yrange', [0,5e-12])
+options('uem', 'yrange', [0,5e-12])
+timespan('2017-07-11 22:33:50', 30, keyword='seconds')
+options('Ke','legend_names', ['L','M','N'])
 tplot_options('vertical_spacing',0.3)
-tplot(['S','Ke','He','Ki','Hi'])
+tplot(['S','Ke','He','uem','upe','upi'])
 # %%
 #Testtextt
 # %%

@@ -20,6 +20,8 @@ eps0 = 8.85e-12   # C^2/Nm^2
 # Define trange and get mec data from all 4 spacecraft
 probes = [1,2,3,4]
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
+
 mec_vars = mec(probe = probes,trange=trange,data_rate='brst',time_clip=True)
 fgm_vars = fgm(probe = probes, data_rate = 'brst', trange=trange,time_clip=True)
 #%%
@@ -117,7 +119,7 @@ for i in range(4):
     posits[i] = posfact*reform(posits[i]) # [pos1,pos2,pos3,pos4]
 
 ## Get Curlometer J ##
-for i in range(ndata-1):
+for i in range(ndata-1)):
     veclist = [Bflds[0][i][:-1],Bflds[1][i][:-1],Bflds[2][i][:-1],Bflds[3][i][:-1]]
     klist = recip_vecs(posits[0][i],posits[1][i],posits[2][i],posits[3][i])
     grd[i] = grad(veclist,klist)
@@ -127,7 +129,7 @@ for i in range(ndata-1):
 B_avg, Rc = np.zeros([ndata,3]), np.zeros(ndata)
 for i in range(ndata-1):
     B_avg[i] =  (Bflds[0][i][:-1]+Bflds[1][i][:-1]+Bflds[2][i][:-1]+Bflds[3][i][:-1])/4   # Is this techincally correct?  Just a 4 pt avg
-    Rc[i] = (np.dot(B_avg[i],grd[i]))
+    Rc[i] = np.abs((np.dot(B_avg[i],grd[i]))**-1)
 
 # May need to revisit method or smooth fields 
 

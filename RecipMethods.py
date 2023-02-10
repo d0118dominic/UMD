@@ -118,6 +118,13 @@ def curl(veclist, klist):
     for i in range(4):
         crl = crl + np.cross(klist[i],veclist[i])
     return crl
+def grad(veclist, klist):
+    i = 0
+    grd = np.array([0,0,0])
+    for i in range(4):
+        grd = grd + klist[i]*np.transpose(veclist[i])
+    return grd
+
 ##%%
 
 # Getting Div and Curl of B (or any vector field.  just change fld_names in for loop)
@@ -159,24 +166,11 @@ for i in range(4):
     flds[i] = fldfact*reform(flds[i]) # [fld1,fld2,fld3,fld4]
     posits[i] = posfact*reform(posits[i]) # [pos1,pos2,pos3,pos4]
 
-
-##%%
-# If fld is 4D (usually because total is included), chop off the 4th term
-if len(flds[0][0]) == 4:   # Just put this here so its convenient to minimize in vscode
-    fld1 = np.zeros([ndata,3])
-    fld2 = np.zeros([ndata,3])
-    fld3 = np.zeros([ndata,3])
-    fld4 = np.zeros([ndata,3])
-    for i in range(ndata-1):
-        fld1[i] = flds[0][i][:-1]
-        fld2[i] = flds[1][i][:-1] 
-        fld3[i] = flds[2][i][:-1]
-        fld4[i] = flds[3][i][:-1]
-    flds = [fld1,fld2,fld3,fld4]
+Bflds = flds
 
 # Get Div & Curl
 for i in range(ndata-1):
-    veclist = [flds[0][i],flds[1][i],flds[2][i],flds[3][i]]
+    veclist = [Bflds[0][i][:-1],Bflds[1][i][:-1],Bflds[2][i][:-1],Bflds[3][i][:-1]]
     klist = recip_vecs(posits[0][i],posits[1][i],posits[2][i],posits[3][i])
     crl[i] = curl(veclist,klist)
     divr[i] = div(veclist,klist)
