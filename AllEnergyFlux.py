@@ -34,15 +34,22 @@ lmn_0617 = np.array([
 [0.93, 0.3, -0.2],
 [-0.27, 0.2, -0.94],
 [-0.24, 0.93, 0.27]])
-I = np.identity(3)
+lmn_1209 = np.array([
+[-0.091,0.87,0.49],
+[-0.25,-0.49,0.83],
+[0.96,-0.05,0.2700]])
 
+I = np.identity(3)
+#%%
 # Get Data
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
+trange = ['2016-11-09/13:39:00', '2016-11-09/13:40:00']  # Shock.  Sep ~ 16 de
+trange = ['2016-12-09/09:03:30', '2016-12-09/09:04:30']  # Electron. Sep ~ 5 de
 
 #trange = ['2016-11-09/13:38:00', '2016-11-09/13:40:00']
 #trange = ['2017-06-17/20:23:30', '2017-06-17/20:24:30']
-#trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
+# trange = ['2015-10-16/13:06:50', '2015-10-16/13:07:10']
 
 
 probe  = [1,2,3,4] 
@@ -51,7 +58,7 @@ trange = trange
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
 edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
 fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
-mec_vars = mec(probe = probe,trange=trange,data_rate='brst',time_clip=True)
+mec_vars = mec(probe = probe,trange=trange,data_rate='srvy',time_clip=True)
 #%%
 
 # Function to change shape of fields to np arrays (will change them back eventually)
@@ -96,9 +103,12 @@ def E_dens(E):
 	ue = 0.5*eps0*np.linalg.norm(E)**2
 	return E
 
+
+# REMEMBER TO FIX!
 def kin_flux(m,n,v):
 	K = 0.5*m*n*v**3
 	#K = 0.5*m*n*v*np.linalg.norm(v)**2# this uses |v|*v
+	# K = v
 	return K
 
 # This works now even though its literally identical to the old version that didnt work..
@@ -115,6 +125,8 @@ def get_j(n,vi,ve):
 	q = 1.6e-19 # charge unit in SI
 	j = q*n*(vi - ve)
 	return j
+
+# Put a J.E function here!!
 	
 def sepvec(a,b):
     sepvec = b-a
@@ -185,7 +197,7 @@ def get_Eprime(E,v,B):
 # Function to read data, interpolate, convert to SI units, and come out in the form of np arrays
 # Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
 def AllFluxes(probe):
-	frame = lmn_0711  #Keeping in GSE for now.  can convert to LMN at the end if desired
+	frame = lmn_1209  #Keeping in GSE for now.  can convert to LMN at the end if desired
 	# Field names variables
 	B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
 	E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
@@ -198,7 +210,7 @@ def AllFluxes(probe):
 	Pi_name = 'mms' + str(probe) + '_dis_prestensor_gse_brst'
 	Pe_name = 'mms' + str(probe) + '_des_prestensor_gse_brst'
 	pos_name = 'mms'+ str(probe) + '_mec_r_gsm'
-	var_name = vi_name
+	var_name = B_name
 	tinterpol(B_name,var_name, newname='B')
 	tinterpol(E_name,var_name, newname='E')
 	tinterpol(vi_name,var_name, newname='vi')
@@ -254,19 +266,22 @@ pos_names = [] # Names of positions
 fld_interp_names = [] # interpolated version of field names 
 posits = [] # get_data for each position
 
-posfact = 1e3 
+# posfact = 1e3 
 
 
 # Get field and mec (position) data
 for i in range(4):
 	pos_names.append('mms'+ str(probe[i]) + '_mec_r_gse')
 	vi_name = 'mms' + str(probe[i]) + '_dis_bulkv_gse_brst'
+	vi_name = 'mms3_fgm_b_gse_brst_l2_btot'
 	tinterpol(pos_names[i],vi_name,newname = 'pos' + str(i+1)) #interpolate
 	posits.append(get_data('pos' + str(i+1)))
 
 # N data points and time axis (setting to different vars here bc flds will change form)
 # Also define shape of curl vs divergence (vector vs scalar)
 timeax = posits[0].times
+timeax = get_data('mms1_dis_bulkv_gse_brst').times
+timeax = get_data('mms3_fgm_b_gse_brst_l2_btot').times
 ndata = len(timeax)
 crl = np.zeros([ndata,3])
 divr = np.zeros([ndata])
@@ -337,6 +352,7 @@ store_data('divHe', data = {'x':timeax, 'y': div_He})
 store_data('divKi', data = {'x':timeax, 'y': div_Ki})
 store_data('divKe', data = {'x':timeax, 'y': div_Ke})
 divnames = ['divS','divHi','divHe','divKi','divKe']
+options(divnames,'thick',1.5)
 #options(divnames, 'yrange', [-1e-8,1e-8])
 options(names, 'thick',1.5)
 #tplot(names)
@@ -345,4 +361,125 @@ options(names, 'thick',1.5)
 # options(names, 'Color', ['b','g','r'])
 # tplot_options('vertical_spacing',0.3)
 # tplot(['S','Ke','He','Ki','Hi'])
+# %%
+
+from pyspedas.analysis.tsmooth import tsmooth
+fld = 'divS'
+tsmooth(fld, width=5,new_names = 'smoothed', preserve_nans=0)
+options('smoothed', 'thick',1.5)
+
+#timespan('2017-06-17 20:23:50', 60, keyword='seconds')
+tplot([fld,'smoothed'])
+# %%
+
+# Need to get Curlometer J
+
+
+# Getting  Curl of B 
+# Get all Bs and positions in np form and interpolted together
+# [0,1,2,3] = MMS[1,2,3,4]
+B_names, vi_names,ve_names,ni_names,ne_names,pos_names,\
+Binterp_names, viinterp_names,veinterp_names,niinterp_names,neinterp_names,\
+Bflds, viflds,veflds, neflds, niflds, posits\
+= [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
+
+# Factors to convert fld & position to SI units (change fldfact depending on fld, keep posfact as is)
+Bfact = 1e-9  
+vfact = 1e3 
+nfact = 1e6  
+posfact = 1e3 
+
+probes = probe
+
+# Get field and mec (position) data
+for i in range(4):
+    B_names.append('mms' + str(probes[i]) + '_fgm_b_gse_brst_l2') #Change this if you want to calc for another vec quantity  
+    vi_names.append('mms' + str(probes[i]) + '_dis_bulkv_gse_brst') #Change this if you want to calc for another vec quantity  
+    ve_names.append('mms' + str(probes[i]) + '_des_bulkv_gse_brst') #Change this if you want to calc for another vec quantity  
+    ni_names.append('mms' + str(probes[i]) + '_dis_numberdensity_brst') #Change this if you want to calc for another vec quantity  
+    ne_names.append('mms' + str(probes[i]) + '_des_numberdensity_brst') #Change this if you want to calc for another vec quantity  
+    pos_names.append('mms'+ str(probes[i]) + '_mec_r_gsm')
+    tinterpol(B_names[i],B_names[i],newname = 'B' + str(i+1)) #interpolate
+    tinterpol(vi_names[i],B_names[i],newname = 'vi' + str(i+1)) #interpolate
+    tinterpol(ve_names[i],B_names[i],newname = 've' + str(i+1)) #interpolate
+    tinterpol(ni_names[i],B_names[i],newname = 'ni' + str(i+1)) #interpolate
+    tinterpol(ne_names[i],B_names[i],newname = 'ne' + str(i+1)) #interpolate
+    tinterpol(pos_names[i],B_names[i],newname = 'pos' + str(i+1)) #interpolate
+    Binterp_names.append('B' + str(i+1))
+    viinterp_names.append('vi' + str(i+1))
+    veinterp_names.append('ve' + str(i+1))
+    niinterp_names.append('ni' + str(i+1))
+    neinterp_names.append('ne' + str(i+1))
+    Bflds.append(get_data(Binterp_names[i]))
+    viflds.append(get_data(viinterp_names[i]))
+    veflds.append(get_data(veinterp_names[i]))
+    niflds.append(get_data(niinterp_names[i]))
+    neflds.append(get_data(neinterp_names[i]))
+    posits.append(get_data('pos' + str(i+1)))
+
+# N data points and time axis (setting to different vars here bc flds will change form)
+# Also define shape of curl vs divergence (vector vs scalar)
+timeax = Bflds[0].times
+ndata = len(timeax)
+crl = np.zeros([ndata,3])
+
+
+# Reform data into np arrays in SI units (flds and posits)
+for i in range(4):
+    Bflds[i] = Bfact*reform(Bflds[i]) # [fld1,fld2,fld3,fld4]
+    viflds[i] = vfact*reform(viflds[i]) # [fld1,fld2,fld3,fld4]
+    veflds[i] = vfact*reform(veflds[i]) # [fld1,fld2,fld3,fld4]
+    niflds[i] = nfact*reform(niflds[i]) # [fld1,fld2,fld3,fld4]
+    neflds[i] = nfact*reform(neflds[i]) # [fld1,fld2,fld3,fld4]
+    posits[i] = posfact*reform(posits[i]) # [pos1,pos2,pos3,pos4]
+
+
+# If fld is 4D (usually because total is included), chop off the 4th term
+if len(Bflds[0][0]) == 4:   # Just put this here so its convenient to minimize in vscode
+    Bfld1 = np.zeros([ndata,3])
+    Bfld2 = np.zeros([ndata,3])
+    Bfld3 = np.zeros([ndata,3])
+    Bfld4 = np.zeros([ndata,3])
+    for i in range(ndata-1):
+        Bfld1[i] = Bflds[0][i][:-1]
+        Bfld2[i] = Bflds[1][i][:-1] 
+        Bfld3[i] = Bflds[2][i][:-1]
+        Bfld4[i] = Bflds[3][i][:-1]
+    Bflds = [Bfld1,Bfld2,Bfld3,Bfld4]
+
+
+
+## Get Curlometer J ##
+for i in range(ndata-1):
+    veclist = [Bflds[0][i],Bflds[1][i],Bflds[2][i],Bflds[3][i]]
+    klist = recip_vecs(posits[0][i],posits[1][i],posits[2][i],posits[3][i])
+    crl[i] = curl(veclist,klist)
+
+j_crl = crl/mu0
+
+
+Eflds = []
+for i in range(4):
+	tinterpol('mms' + str(probe[i]) + '_edp_dce_gse_brst_l2',B_names[i],newname = 'E' + str(i+1)) #interpolate
+	Eflds.append(get_data('E' + str(i+1)))
+
+
+for i in range(4):
+    Eflds[i] = 1e3*reform(Eflds[i]) 
+
+E_avg = sum(Eflds)
+
+JdotE = np.zeros(len(E_avg))
+for i in range(len(E_avg)):
+	JdotE[i] = np.dot(j_crl[i],E_avg[i])
+
+# timespan('2017-07-11 22:33:50', 30, keyword='seconds')
+
+store_data('jdote', data = {'x':timeax,'y':JdotE})
+
+options('jdote','thick', 1.5)
+
+tplot(['divS','jdote'])
+
+# Why are the units of jdote so ridiculous?? they're definitely way too large
 # %%
