@@ -10,7 +10,7 @@ from pytplot import options
 from pyspedas import tinterpol
 from pytplot import tplot_options
 from pyspedas.mms import mec,fgm,fpi,edp,scm
-from pytplot import get_data, store_data
+from pytplot import get_data, store_data,timespan
 from matplotlib.pyplot import plot
 from matplotlib.pyplot import scatter
 me = 9.1094e-31 #kg
@@ -40,11 +40,15 @@ lmn_1209 = np.array([
 [0.96,-0.05,0.2700]])
 
 I = np.identity(3)
+
+
+frame = lmn_1209
+
 #%%
 # Get Data
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
 trange = ['2017-07-11/22:33:30', '2017-07-11/22:34:30']
-trange = ['2016-11-09/13:39:00', '2016-11-09/13:40:00']  # Shock.  Sep ~ 16 de
+# trange = ['2016-11-09/13:39:00', '2016-11-09/13:40:00']  # Shock.  Sep ~ 16 de
 trange = ['2016-12-09/09:03:30', '2016-12-09/09:04:30']  # Electron. Sep ~ 5 de
 
 #trange = ['2016-11-09/13:38:00', '2016-11-09/13:40:00']
@@ -61,6 +65,8 @@ fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
 mec_vars = mec(probe = probe,trange=trange,data_rate='srvy',time_clip=True)
 #%%
 
+interpfld = 'mms1_mec_r_gsm'
+interpfld = 'mms1_fgm_b_gse_brst_l2'
 # Function to change shape of fields to np arrays (will change them back eventually)
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
@@ -101,7 +107,7 @@ def B_dens(B):
 
 def E_dens(E):
 	ue = 0.5*eps0*np.linalg.norm(E)**2
-	return E
+	return ue
 
 
 # REMEMBER TO FIX!
@@ -173,6 +179,16 @@ def recip_vecs(pos1,pos2,pos3,pos4):
 # where veclist is a list of some vector quantity measured at [MMS1,MMS2,MMS3,MMS4]
 # and klist is the list of reciprocal vectors [k1,k2,k3,k4]
 
+#////////////////////////////////////////
+# Need to verify if it works
+def grad_scalar(scalist, klist):
+    i = 0
+    grd = np.zeros(3)
+    for i in range(4):
+        grd = grd + klist[i]*scalist[i] #Fix this too!!
+    return convert_lmn(grd,frame)
+#///////////////////////////////////////////////
+
 def div(veclist, klist):
     i = 0
     div = 0
@@ -184,20 +200,14 @@ def curl(veclist, klist):
     crl = np.array([0,0,0])
     for i in range(4):
         crl = crl + np.cross(klist[i],veclist[i])
-    return crl
+    return convert_lmn(crl,frame)
 ##%%
 
 def get_Eprime(E,v,B):
 	Ep = E + np.cross(v,B)
 	return Ep
 
-
-
-
-# Function to read data, interpolate, convert to SI units, and come out in the form of np arrays
-# Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
-def AllFluxes(probe):
-	frame = lmn_1209  #Keeping in GSE for now.  can convert to LMN at the end if desired
+def AllDensities(probe):
 	# Field names variables
 	B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
 	E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
@@ -210,7 +220,80 @@ def AllFluxes(probe):
 	Pi_name = 'mms' + str(probe) + '_dis_prestensor_gse_brst'
 	Pe_name = 'mms' + str(probe) + '_des_prestensor_gse_brst'
 	pos_name = 'mms'+ str(probe) + '_mec_r_gsm'
-	var_name = B_name
+	var_name = interpfld
+	tinterpol(B_name,var_name, newname='B')
+	tinterpol(E_name,var_name, newname='E')
+	tinterpol(vi_name,var_name, newname='vi')
+	tinterpol(ve_name,var_name, newname='ve')
+	tinterpol(Pi_name,var_name, newname='Pi')
+	tinterpol(Pe_name,var_name, newname='Pe')
+	tinterpol(ni_name,var_name, newname='ni')
+	tinterpol(ne_name,var_name, newname='ne')
+	tinterpol(pos_name, var_name,newname='pos')
+	B = 1e-9*reform(get_data('B'))
+	E = 1e-3*reform(get_data('E'))
+	vi = 1e3*reform(get_data('vi'))
+	ve = 1e3*reform(get_data('ve'))
+	ni = 1e6*reform(get_data('ni'))
+	ne = 1e6*reform(get_data('ne'))
+	Pi = 1e-9*reform(get_data('Pi'))
+	Pe = 1e-9*reform(get_data('Pe'))
+	ndata = len(vi)
+	
+	# EM Energy Density
+	uE = np.zeros_like(ni)
+	uB = np.zeros_like(ni)
+	uem = np.zeros_like(ni)
+	for i in range(ndata-1):
+		uE[i] = E_dens(E[i])  #Array element sequence error?
+		uB[i] = B_dens(B[i])
+		uem[i] = uE[i] + uB[i]
+	
+	# Kinetic Energy Density
+	uke = np.zeros_like(ni)
+	uki = np.zeros_like(ni)
+	uk = np.zeros_like(ni)
+	for i in range(ndata-1):
+		uke[i] = kinetic_dens(me,ne[i],ve[i])
+		uki[i] = kinetic_dens(mi,ni[i],vi[i])
+		uk[i] = uke[i] + uki[i]
+
+	# Thermal Energy Density
+	ute = np.zeros_like(ni)
+	uti = np.zeros_like(ni)
+	ut = np.zeros_like(ni)
+	for i in range(ndata-1):
+		ute[i] = therm_dens(Pe[i])
+		uti[i] = therm_dens(Pi[i])
+		ut[i] = ute[i] + uti[i]
+
+	# Plasma Energy Density
+	ue = np.zeros_like(ni)
+	ui = np.zeros_like(ni)
+	up = np.zeros_like(ni)
+	for i in range(ndata-1):
+		ue[i] = ute[i] + uke[i]
+		ui[i] = uti[i] + uki[i]
+		up[i] = ue[i] + ui[i]
+	return uem,uE,uB,up,ue,ui,ut,ute,uti,uk,uke,uki
+
+# Function to read data, interpolate, convert to SI units, and come out in the form of np arrays
+# Cadence order (high -> low): edp & scm (same) -> fgm -> fpi-des -> fpi-dis
+def AllFluxes(probe):
+	# frame = lmn_1209  # convert to LMN at the end if desired
+	# Field names variables
+	B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
+	E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
+	vi_name = 'mms' + str(probe) + '_' + 'dis' + '_bulkv_gse_brst'
+	ve_name = 'mms' + str(probe) + '_' + 'des' + '_bulkv_gse_brst'
+	B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
+	E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
+	ne_name = 'mms' + str(probe) + '_' + 'des' + '_numberdensity_brst'
+	ni_name = 'mms' + str(probe) + '_' + 'dis' + '_numberdensity_brst'
+	Pi_name = 'mms' + str(probe) + '_dis_prestensor_gse_brst'
+	Pe_name = 'mms' + str(probe) + '_des_prestensor_gse_brst'
+	pos_name = 'mms'+ str(probe) + '_mec_r_gsm'
+	var_name = interpfld
 	tinterpol(B_name,var_name, newname='B')
 	tinterpol(E_name,var_name, newname='E')
 	tinterpol(vi_name,var_name, newname='vi')
@@ -257,6 +340,11 @@ S1,He1,Hi1,Ke1,Ki1 = AllFluxes(1)
 S2,He2,Hi2,Ke2,Ki2 = AllFluxes(2)  
 S3,He3,Hi3,Ke3,Ki3 = AllFluxes(3)  
 S4,He4,Hi4,Ke4,Ki4 = AllFluxes(4) 
+uem1,uE1,uB1,up1,ue1,ui1,ut1,ute1,uti1,uk1,uke1,uki1 = AllDensities(1)
+uem2,uE2,uB2,up2,ue2,ui2,ut2,ute2,uti2,uk2,uke2,uki2 = AllDensities(2)
+uem3,uE3,uB3,up3,ue3,ui3,ut3,ute3,uti3,uk3,uke3,uki3 = AllDensities(3)
+uem4,uE4,uB4,up4,ue4,ui4,ut4,ute4,uti4,uk4,uke4,uki4 = AllDensities(4)
+
 ndata = len(S1) 
 
 
@@ -274,7 +362,7 @@ for i in range(4):
 	pos_names.append('mms'+ str(probe[i]) + '_mec_r_gse')
 	vi_name = 'mms' + str(probe[i]) + '_dis_bulkv_gse_brst'
 	vi_name = 'mms3_fgm_b_gse_brst_l2_btot'
-	tinterpol(pos_names[i],vi_name,newname = 'pos' + str(i+1)) #interpolate
+	tinterpol(pos_names[i],interpfld,newname = 'pos' + str(i+1)) #interpolate
 	posits.append(get_data('pos' + str(i+1)))
 
 # N data points and time axis (setting to different vars here bc flds will change form)
@@ -295,7 +383,7 @@ pos1,pos2,pos3,pos4 = posits[0],posits[1],posits[2],posits[3]
 #%%
 crl_S,crl_Hi,crl_He,crl_Ki,crl_Ke = np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3])
 div_S,div_Hi,div_He,div_Ki,div_Ke = np.zeros([ndata]),np.zeros([ndata]),np.zeros([ndata]),np.zeros([ndata]),np.zeros([ndata])
-
+grd_uem,grd_up,grd_ue,grd_ui,grd_ute = np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3]),np.zeros([ndata,3])
 # Get Div & Curl
 for i in range(ndata-1):
 	Slist = [S1[i],S2[i],S3[i],S4[i]]
@@ -321,10 +409,20 @@ for i in range(ndata-1):
 	crl_Ke[i] = curl(Kelist,klist)
 	div_Ke[i] = div(Kelist,klist)
 
+# Add functions to calculate gradients of energy densities uem,up,ue,ui
+	uemlist = [uem1[i],uem2[i],uem3[i],uem4[i]]
+	uplist = [up1[i],up2[i],up3[i],up4[i]]
+	uelist = [ue1[i],ue2[i],ue3[i],ue4[i]]
+	uilist = [ui1[i],ui2[i],ui3[i],ui4[i]]
+	utelist = [ute1[i],ute2[i],ute3[i],ute4[i]]
 
-
-
-
+	# Gradient functions here  
+	# Seems to work.  Worth exploring more this week
+	grd_uem[i] =  grad_scalar(uemlist,klist)
+	grd_up[i] = grad_scalar(uplist,klist)
+	grd_ue[i] = grad_scalar(uelist,klist)
+	grd_ui[i] = grad_scalar(uilist,klist)
+	grd_ute[i] = grad_scalar(utelist,klist)
 #%%
 # Default units W/m^2
 Slist = [S1,S2,S3,S4]
@@ -332,26 +430,47 @@ Hilist = [Hi1,Hi2,Hi3,Hi4]
 Helist = [He1,He2,He3,He4]
 Kilist = [Ki1,Ki2,Ki3,Ki4]
 Kelist = [Ke1,Ke2,Ke3,Ke4]
+uemlist = [uem1,uem2,uem3,uem4]
+uplist = [up1,up2,up3,up4]
+uelist = [ue1,ue2,ue3,ue4]
+uilist = [ui1,ui2,ui3,ui4]
+utelist = [ute1,ute2,ute3,ute4]
+
 names = []
 
 for i in range(4):
-	store_data('S'+str(i+1), data = {'x':timeax, 'y': Slist[i]})
-	store_data('Ke'+str(i+1), data = {'x':timeax, 'y': Kelist[i]})
-	store_data('He'+str(i+1), data = {'x':timeax, 'y': Helist[i]})
-	store_data('Ki'+str(i+1), data = {'x':timeax, 'y': Kilist[i]})
-	store_data('Hi'+str(i+1), data = {'x':timeax, 'y': Hilist[i]})
+	store_data('S'+str(i+1), data = {'x':timeax, 'y': 1e9*Slist[i]})
+	store_data('Ke'+str(i+1), data = {'x':timeax, 'y': 1e9*Kelist[i]})
+	store_data('He'+str(i+1), data = {'x':timeax, 'y': 1e9*Helist[i]})
+	store_data('Ki'+str(i+1), data = {'x':timeax, 'y': 1e9*Kilist[i]})
+	store_data('Hi'+str(i+1), data = {'x':timeax, 'y': 1e9*Hilist[i]})
 	names = names + ['S'+str(i+1), 'Ke'+str(i+1),'He'+str(i+1),'Ki'+str(i+1),'Hi'+str(i+1)]
 
-
-
+# Store energy densities (just storeing averages for now) (#Converted to nJ/m^3)
+store_data('uem', data = {'x':timeax, 'y': 0.25e9*(uemlist[0]+uemlist[1]+uemlist[2]+uemlist[3])})
+store_data('up', data = {'x':timeax, 'y': 0.25e9*(uplist[0]+uplist[1]+uplist[2]+uplist[3])})
+store_data('ue', data = {'x':timeax, 'y': 0.25e9*(uelist[0]+uelist[1]+uelist[2]+uelist[3])})
+store_data('ui', data = {'x':timeax, 'y': 0.25e9*(uilist[0]+uilist[1]+uilist[2]+uilist[3])})
+store_data('ute', data = {'x':timeax, 'y': 0.25e9*(utelist[0]+utelist[1]+utelist[2]+utelist[3])})
+unames = ['uem','up','ue','ui','ute']
 #Why isn't MMS4 showing up in tplot?
 
-store_data('divS', data = {'x':timeax, 'y': div_S})
-store_data('divHi', data = {'x':timeax, 'y': div_Hi})
-store_data('divHe', data = {'x':timeax, 'y': div_He})
-store_data('divKi', data = {'x':timeax, 'y': div_Ki})
-store_data('divKe', data = {'x':timeax, 'y': div_Ke})
+store_data('divS', data = {'x':timeax, 'y': 1e9*div_S})     # ALL CONVERTED TO nW/m^3
+store_data('divHi', data = {'x':timeax, 'y': 1e9*div_Hi})
+store_data('divHe', data = {'x':timeax, 'y': 1e9*div_He})
+store_data('divKi', data = {'x':timeax, 'y': 1e9*div_Ki})
+store_data('divKe', data = {'x':timeax, 'y': 1e9*div_Ke})
 divnames = ['divS','divHi','divHe','divKi','divKe']
+
+
+# Store gradients of energy densities here (SI units for now)
+store_data('grd_uem', data = {'x':timeax,'y': grd_uem})
+store_data('grd_up', data = {'x':timeax,'y': grd_up})
+store_data('grd_ue', data = {'x':timeax,'y': grd_ue})
+store_data('grd_ui', data = {'x':timeax,'y': grd_ui})
+store_data('grd_ute', data = {'x':timeax,'y': grd_ute})
+grdnames = ['grd_uem','grd_up','grd_ue','grd_ui','grd_ute']
+
 options(divnames,'thick',1.5)
 #options(divnames, 'yrange', [-1e-8,1e-8])
 options(names, 'thick',1.5)
@@ -361,15 +480,14 @@ options(names, 'thick',1.5)
 # options(names, 'Color', ['b','g','r'])
 # tplot_options('vertical_spacing',0.3)
 # tplot(['S','Ke','He','Ki','Hi'])
-# %%
 
-from pyspedas.analysis.tsmooth import tsmooth
-fld = 'divS'
-tsmooth(fld, width=5,new_names = 'smoothed', preserve_nans=0)
-options('smoothed', 'thick',1.5)
+# from pyspedas.analysis.tsmooth import tsmooth
+# fld = 'divS'
+# tsmooth(fld, width=5,new_names = 'smoothed', preserve_nans=0)
+# options('smoothed', 'thick',1.5)
 
 #timespan('2017-06-17 20:23:50', 60, keyword='seconds')
-tplot([fld,'smoothed'])
+# tplot([fld,'smoothed'])
 # %%
 
 # Need to get Curlometer J
@@ -390,32 +508,16 @@ nfact = 1e6
 posfact = 1e3 
 
 probes = probe
-
 # Get field and mec (position) data
 for i in range(4):
-    B_names.append('mms' + str(probes[i]) + '_fgm_b_gse_brst_l2') #Change this if you want to calc for another vec quantity  
-    vi_names.append('mms' + str(probes[i]) + '_dis_bulkv_gse_brst') #Change this if you want to calc for another vec quantity  
-    ve_names.append('mms' + str(probes[i]) + '_des_bulkv_gse_brst') #Change this if you want to calc for another vec quantity  
-    ni_names.append('mms' + str(probes[i]) + '_dis_numberdensity_brst') #Change this if you want to calc for another vec quantity  
-    ne_names.append('mms' + str(probes[i]) + '_des_numberdensity_brst') #Change this if you want to calc for another vec quantity  
-    pos_names.append('mms'+ str(probes[i]) + '_mec_r_gsm')
-    tinterpol(B_names[i],B_names[i],newname = 'B' + str(i+1)) #interpolate
-    tinterpol(vi_names[i],B_names[i],newname = 'vi' + str(i+1)) #interpolate
-    tinterpol(ve_names[i],B_names[i],newname = 've' + str(i+1)) #interpolate
-    tinterpol(ni_names[i],B_names[i],newname = 'ni' + str(i+1)) #interpolate
-    tinterpol(ne_names[i],B_names[i],newname = 'ne' + str(i+1)) #interpolate
-    tinterpol(pos_names[i],B_names[i],newname = 'pos' + str(i+1)) #interpolate
-    Binterp_names.append('B' + str(i+1))
-    viinterp_names.append('vi' + str(i+1))
-    veinterp_names.append('ve' + str(i+1))
-    niinterp_names.append('ni' + str(i+1))
-    neinterp_names.append('ne' + str(i+1))
-    Bflds.append(get_data(Binterp_names[i]))
-    viflds.append(get_data(viinterp_names[i]))
-    veflds.append(get_data(veinterp_names[i]))
-    niflds.append(get_data(niinterp_names[i]))
-    neflds.append(get_data(neinterp_names[i]))
-    posits.append(get_data('pos' + str(i+1)))
+	B_names.append('mms' + str(probes[i]) + '_fgm_b_gse_brst_l2') #Change this if you want to calc for another vec quantity  
+	pos_names.append('mms'+ str(probes[i]) + '_mec_r_gsm')
+	# tinterpol(B_names[i],B_names[i],newname = 'B' + str(i+1)) #interpolate
+	# tinterpol(pos_names[i],B_names[i],newname = 'pos' + str(i+1)) #interpolate
+	tinterpol(B_names[i],interpfld,newname = 'B' + str(i+1))
+	tinterpol(pos_names[i],interpfld,newname = 'pos' + str(i+1))
+	Bflds.append(get_data('B' + str(i+1)))
+	posits.append(get_data('pos' + str(i+1)))
 
 # N data points and time axis (setting to different vars here bc flds will change form)
 # Also define shape of curl vs divergence (vector vs scalar)
@@ -427,10 +529,6 @@ crl = np.zeros([ndata,3])
 # Reform data into np arrays in SI units (flds and posits)
 for i in range(4):
     Bflds[i] = Bfact*reform(Bflds[i]) # [fld1,fld2,fld3,fld4]
-    viflds[i] = vfact*reform(viflds[i]) # [fld1,fld2,fld3,fld4]
-    veflds[i] = vfact*reform(veflds[i]) # [fld1,fld2,fld3,fld4]
-    niflds[i] = nfact*reform(niflds[i]) # [fld1,fld2,fld3,fld4]
-    neflds[i] = nfact*reform(neflds[i]) # [fld1,fld2,fld3,fld4]
     posits[i] = posfact*reform(posits[i]) # [pos1,pos2,pos3,pos4]
 
 
@@ -465,7 +563,7 @@ for i in range(4):
 
 
 for i in range(4):
-    Eflds[i] = 1e3*reform(Eflds[i]) 
+    Eflds[i] = 1e-3*reform(Eflds[i]) 
 
 E_avg = sum(Eflds)
 
@@ -473,13 +571,27 @@ JdotE = np.zeros(len(E_avg))
 for i in range(len(E_avg)):
 	JdotE[i] = np.dot(j_crl[i],E_avg[i])
 
-# timespan('2017-07-11 22:33:50', 30, keyword='seconds')
 
-store_data('jdote', data = {'x':timeax,'y':JdotE})
+timespan('2016-12-09 09:03:54', 1, keyword='seconds')
 
-options('jdote','thick', 1.5)
+# store_data('Poynt', data = {'x':timeax,'y':1e9*np.array([JdotE,div_S,-JdotE-div_S])})
+store_data('jdote', data = {'x':timeax,'y':1e9*JdotE})  # CONVERTED TO nW/m^3
 
-tplot(['divS','jdote'])
+store_data('du/dt', data = {'x':timeax,'y': -1e9*(JdotE+div_S)})
+
+
+#%%
+pterms = ['divS','jdote','du/dt','Poynt Terms']
+
+options(pterms,'thick', 1.5)
+options('Poynt Terms','Color',['r','b','k'])
+options('Poynt Terms','legend_names', ['J.E','Div(S)','du/dt'])
+
+options(pterms,'yrange',[-250,250])
+#|options(pterms,'yrange',[-3,3])
+# timespan('2017-07-11 22:34:00', 6, keyword='seconds')
+
+tplot(['divS','jdote','du/dt'])
 
 # Why are the units of jdote so ridiculous?? they're definitely way too large
 # %%
